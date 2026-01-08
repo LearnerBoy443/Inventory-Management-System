@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Inventory Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>IMS</h2>
+        <ul>
+            <li class="active">Dashboard</li>
+            <li>Products</li>
+            <li>Stock</li>
+            <li>Suppliers</li>
+            <li>Reports</li>
+            <li>Settings</li>
+            <li><a href="{{ url_for('logout') }}" style="color:white;">Logout</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main">
+        <header>
+            <h1>Dashboard</h1>
+            <span>Welcome, {{ session['user'] }}</span>
+        </header>
+
+        <!-- Cards -->
+        <div class="cards">
+            <div class="card">📦 Total Products<br><b>{{ total_products }}</b></div>
+            <div class="card">🔴 Low Stock<br><b>{{ low_stock }}</b></div>
+            <div class="card">💰 Inventory Value<br><b>₹{{ inventory_value|round(2) }}</b></div>
+            <div class="card">🔄 Today Transactions<br><b>15</b></div>
+        </div>
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, msg in messages %}
+              <div class="{{ category }}">{{ msg }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- Search Bar -->
+        <div style="margin-bottom: 15px;">
+            <form action="{{ url_for('index') }}" method="get">
+                <input type="text" name="q" placeholder="Search by name or category" value="{{ q }}">
+                <button type="submit" class="btn">Search</button>
+                <a href="{{ url_for('index') }}" class="btn" style="background:#f59e0b;">Clear</a>
+            </form>
+        </div>
+
+        <!-- Product Table -->
+        <h2>Product List</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Stock</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr>
+                    <td>{{ p.name }}</td>
+                    <td>{{ p.category }}</td>
+                    <td>{{ p.stock }}</td>
+                    <td>₹{{ p.price }}</td>
+                    <td class="{{ 'danger' if p.stock < 10 else 'ok' }}">
+                        {{ 'Low' if p.stock < 10 else 'Available' }}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('delete', pid=p.id) }}" class="btn small delete">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Add Product -->
+        <h2>Add Product</h2>
+        <form class="form" action="{{ url_for('add') }}" method="POST">
+            <input type="text" name="pname" placeholder="Product Name" required>
+            <input type="number" name="pstock" placeholder="Stock" required>
+            <input type="number" name="pprice" placeholder="Price" step="0.01" required>
+            <button type="submit">Add</button>
+        </form>
+
+        <a href="{{ url_for('export_csv') }}" class="btn">Export CSV</a>
+
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

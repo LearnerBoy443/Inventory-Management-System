@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold">Dashboard</h2>
+        <p class="text-muted">Overview of your inventory status</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
+            <i class="fas fa-plus me-2"></i> Add Product
+        </button>
+        <button class="btn btn-info text-white" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+            <i class="fas fa-tags me-2"></i> Add Category
+        </button>
+        <a href="{{ url_for('inventory.export_csv') }}" class="btn btn-dark">
+            <i class="fas fa-file-csv me-2"></i> Export CSV
+        </a>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4 g-4">
+    <div class="col-md-3">
+        <div class="card card-stat border-primary h-100 p-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h5 class="text-primary">Total Products</h5>
+                    <h2 class="text-main">{{ total_products }}</h2>
+                </div>
+                <div class="bg-primary bg-opacity-10 p-2 rounded">
+                    <i class="fas fa-box fa-lg text-primary"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-stat border-danger h-100 p-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h5 class="text-danger">Low Stock</h5>
+                    <h2 class="text-main">{{ low_stock }}</h2>
+                </div>
+                <div class="bg-danger bg-opacity-10 p-2 rounded">
+                    <i class="fas fa-exclamation-triangle fa-lg text-danger"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-stat border-success h-100 p-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h5 class="text-success">Inventory Value</h5>
+                    <h2 class="text-main">₹{{ "%.2f"|format(inventory_value) }}</h2>
+                </div>
+                <div class="bg-success bg-opacity-10 p-2 rounded">
+                    <i class="fas fa-dollar-sign fa-lg text-success"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-stat border-info h-100 p-3">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h5 class="text-info">Active Users</h5>
+                    <h2 class="text-main">1</h2>
+                </div>
+                <div class="bg-info bg-opacity-10 p-2 rounded">
+                    <i class="fas fa-users fa-lg text-info"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Product Table -->
+<div class="card shadow-sm">
+    <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold">Recent Products</h5>
+        <a href="{{ url_for('main.products') }}" class="btn btn-sm btn-outline-secondary">View All</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Product Name</th>
+                        <th>Category</th>
+                        <th>Stock</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in products[:5] %}
+                    <tr>
+                        <td class="ps-4 fw-medium text-main">{{ p.name }}</td>
+                        <td>
+                            {% if p.category_obj %}
+                            <span
+                                class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">{{
+                                p.category_obj.name }}</span>
+                            {% else %}
+                            <span class="text-muted small">Uncategorized</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.stock < 10 %} <span class="text-danger fw-bold">{{ p.stock }}</span>
+                                {% else %}
+                                {{ p.stock }}
+                                {% endif %}
+                        </td>
+                        <td class="fw-medium">₹{{ "%.2f"|format(p.price) }}</td>
+                        <td>
+                            {% if p.stock < 10 %} <span class="badge bg-danger bg-opacity-10 text-danger">Low
+                                Stock</span>
+                                {% else %}
+                                <span class="badge bg-success bg-opacity-10 text-success">In Stock</span>
+                                {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{{ url_for('inventory.edit', pid=p.id) }}"
+                                class="btn btn-sm btn-outline-primary me-1">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{{ url_for('inventory.delete', pid=p.id) }}" class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('Are you sure?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Product Modal -->
+<div class="modal fade" id="addProductModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('inventory.add') }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Product Name</label>
+                        <input type="text" class="form-control" name="pname" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" name="pcategory" required>
+                            <option value="" disabled selected>Select a Category</option>
+                            {% for c in categories %}
+                            <option value="{{ c.id }}">{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Stock Quantity</label>
+                        <input type="number" class="form-control" name="pstock" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Price</label>
+                        <input type="number" step="0.01" class="form-control" name="pprice" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success">Add Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Category Modal -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('inventory.add_category') }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Category Name</label>
+                        <input type="text" class="form-control" name="cname" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-info text-white">Add Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Inventory Chart
+    const ctx = document.getElementById('inventoryChart').getContext('2d');
+
+    // Prepare data (This should ideally come from backend JSON)
+    // For now, we simulate a simple category distribution if functionality was strictly backend-linked
+    // But since we want it dynamic, let's just make it visually pleasing with mock data or simple jinja loop if possible.
+    // To keep it robust without extra routes, we'll use a placeholder or simple logic.
+
+    // Let's create a chart of Product Prices or Stock?
+    // Let's use the actual product stock data passed to template!
+
+    const productNames = [{% for p in products[: 5] %}"{{ p.name }}", {% endfor %}];
+    const productStocks = [{% for p in products[: 5] %}{ { p.stock } }, {% endfor %}];
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: productNames,
+            datasets: [{
+                label: 'Stock Level',
+                data: productStocks,
+                backgroundColor: 'rgba(79, 70, 229, 0.6)',
+                borderColor: 'rgba(79, 70, 229, 1)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

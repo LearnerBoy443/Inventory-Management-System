@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Edit Product | Chakraborty Industries{% endblock %}
+{% block content %}
+<div class="actions-header">
+    <h1 class="page-title" style="margin: 0;">Edit Product <span id="product-display-name"></span></h1>
+    <a href="{% url 'products' %}" class="btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">Back to Products</a>
+</div>
+
+<div class="dashboard-grid" style="grid-template-columns: 1fr; max-width: 600px; margin: 0 auto;">
+    <div class="glass-panel" style="padding: 2rem;">
+        <form id="edit-product-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Product Name</label>
+                <input type="text" id="pname" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select id="pcategory" class="form-control" required>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Stock Quantity</label>
+                <input type="number" id="pstock" class="form-control" required min="0">
+            </div>
+            <div class="form-group">
+                <label>Unit Price</label>
+                <input type="number" id="pprice" class="form-control" step="0.01" required min="0">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Update Product</button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const pid = {{ pid }};
+    const form = document.getElementById('edit-product-form');
+    const categorySelect = document.getElementById('pcategory');
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Load categories first
+    fetch('/api/categories/')
+        .then(res => res.json())
+        .then(data => {
+            data.forEach(c => {
+                const option = document.createElement('option');
+                option.value = c.id;
+                option.textContent = c.name;
+                categorySelect.appendChild(option);
+            });
+            // Then load product
+            return fetch(`/api/products/${pid}/`);
+        })
+        .then(res => res.json())
+        .then(product => {
+            document.getElementById('product-display-name').textContent = `- ${product.name}`;
+            document.getElementById('pname').value = product.name;
+            document.getElementById('pcategory').value = product.category;
+            document.getElementById('pstock').value = product.stock;
+            document.getElementById('pprice').value = parseFloat(product.price).toFixed(2);
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Error loading product data.");
+        });
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const data = {
+            name: document.getElementById('pname').value,
+            category: document.getElementById('pcategory').value,
+            stock: document.getElementById('pstock').value,
+            price: document.getElementById('pprice').value
+        };
+
+        fetch(`/api/products/${pid}/`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify(data)
+        }).then(res => {
+            if(res.ok) {
+                alert("Product updated successfully!");
+                window.location.href = "{% url 'products' %}";
+            } else {
+                alert("Failed to update product");
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

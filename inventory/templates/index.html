@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard | Chakraborty Industries{% endblock %}
+{% block content %}
+<h1 class="page-title">Dashboard</h1>
+
+<div class="dashboard-grid">
+    <div class="stat-card glass-panel">
+        <h3 class="stat-title">Total Products</h3>
+        <p class="stat-value" id="total-products">-</p>
+    </div>
+    <div class="stat-card glass-panel">
+        <h3 class="stat-title">Low Stock Items</h3>
+        <p class="stat-value" id="low-stock" style="background: var(--danger); -webkit-background-clip: text;">-</p>
+    </div>
+    <div class="stat-card glass-panel">
+        <h3 class="stat-title">Total Value</h3>
+        <p class="stat-value" id="total-value">$-</p>
+    </div>
+</div>
+
+<div class="actions-header">
+    <h2>Operations</h2>
+    <div class="flex-gap">
+        <a href="{% url 'products' %}" class="btn btn-primary">Manage Products</a>
+        <a href="{% url 'categories' %}" class="btn btn-primary" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">Manage Categories</a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    fetch('/api/products/dashboard/')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('total-products').innerText = data.total_products;
+            document.getElementById('low-stock').innerText = data.low_stock;
+            document.getElementById('total-value').innerText = '$' + parseFloat(data.inventory_value).toFixed(2);
+        })
+        .catch(err => console.error("Error loading dashboard data:", err));
+});
+</script>
+{% endblock %}

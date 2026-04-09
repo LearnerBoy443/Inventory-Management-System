@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% block title %}Products | Chakraborty Industries{% endblock %}
+{% block content %}
+<div class="actions-header">
+    <h1 class="page-title" style="margin: 0;">Inventory Management</h1>
+    <a href="/api/products/export_csv/" class="btn btn-primary" style="background: var(--success); box-shadow: none;">Export CSV</a>
+</div>
+
+<div class="dashboard-grid" style="grid-template-columns: 1fr 2fr;">
+    <!-- Add new product form -->
+    <div class="glass-panel" style="padding: 2rem;">
+        <h3>Add Product</h3>
+        <form id="product-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Product Name</label>
+                <input type="text" id="pname" class="form-control" required placeholder="Enter name...">
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select id="pcategory" class="form-control" required>
+                    <option value="" disabled selected>Select category...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Initial Stock</label>
+                <input type="number" id="pstock" class="form-control" required min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label>Unit Price</label>
+                <input type="number" id="pprice" class="form-control" step="0.01" required min="0" value="0.00">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Add Product</button>
+        </form>
+    </div>
+
+    <!-- Products Table -->
+    <div class="glass-panel" style="padding: 2rem;">
+        <h3>All Products</h3>
+        <div class="table-wrapper">
+            <table id="product-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Stock</th>
+                        <th>Price</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="6" style="text-align: center;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const tableBody = document.querySelector('#product-table tbody');
+    const form = document.getElementById('product-form');
+    const categorySelect = document.getElementById('pcategory');
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    function loadCategories() {
+        fetch('/api/categories/')
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(c => {
+                    const option = document.createElement('option');
+                    option.value = c.id;
+                    option.textContent = c.name;
+                    categorySelect.appendChild(option);
+                });
+            });
+    }
+
+    function loadProducts() {
+        fetch('/api/products/')
+            .then(res => res.json())
+            .then(data => {
+                tableBody.innerHTML = '';
+                if(data.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 3rem;">No products found in operations. Start by adding some above.</td></tr>';
+                    return;
+                }
+                data.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="color: var(--text-muted);">#${p.id}</td>
+                        <td style="font-weight: 500;">${p.name}</td>
+                        <td>${p.category_name || "Uncategorized"}</td>
+                        <td>
+                            ${p.stock < 10 ? `<span style="color: var(--danger); font-weight: 600;">${p.stock}</span>` : p.stock}
+                        </td>
+                        <td>$${parseFloat(p.price).toFixed(2)}</td>
+                        <td>
+                            <div class="flex-gap" style="gap: 0.5rem;">
+                                <a href="/edit_product/${p.id}/" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">Edit</a>
+                                <button class="btn btn-danger delete-btn" data-id="${p.id}" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Delete</button>
+                            </div>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if(confirm('Are you sure you want to delete this product?')) {
+                            const pid = e.target.getAttribute('data-id');
+                            fetch(`/api/products/${pid}/`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'X-CSRFToken': csrftoken
+                                }
+                            }).then(() => loadProducts());
+                        }
+                    });
+                });
+            });
+    }
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const data = {
+            name: document.getElementById('pname').value,
+            category: document.getElementById('pcategory').value,
+            stock: document.getElementById('pstock').value,
+            price: document.getElementById('pprice').value
+        };
+
+        fetch('/api/products/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify(data)
+        }).then(res => {
+            if(res.ok) {
+                form.reset();
+                loadProducts();
+            } else {
+                alert("Failed to create product");
+            }
+        });
+    });
+
+    loadCategories();
+    loadProducts();
+});
+</script>
+{% endblock %}

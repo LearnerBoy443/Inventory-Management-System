@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Categories | Chakraborty Industries{% endblock %}
+{% block content %}
+<div class="actions-header">
+    <h1 class="page-title" style="margin: 0;">Categories</h1>
+</div>
+
+<div class="dashboard-grid" style="grid-template-columns: 1fr 2fr;">
+    <!-- Add Category Form -->
+    <div class="glass-panel" style="padding: 2rem;">
+        <h3>Add Category</h3>
+        <form id="category-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Category Name</label>
+                <input type="text" id="cname" name="cname" class="form-control" required placeholder="Ex: Electronics">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Create Category</button>
+        </form>
+    </div>
+
+    <!-- Category Table -->
+    <div class="glass-panel" style="padding: 2rem;">
+        <h3>Existing Categories</h3>
+        <div class="table-wrapper">
+            <table id="category-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Product Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="3" style="text-align: center;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const tableBody = document.querySelector('#category-table tbody');
+    const form = document.getElementById('category-form');
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    function loadCategories() {
+        fetch('/api/categories/')
+            .then(res => res.json())
+            .then(data => {
+                tableBody.innerHTML = '';
+                if(data.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted); padding: 3rem;">No categories created yet.</td></tr>';
+                    return;
+                }
+                data.forEach(c => {
+                    tableBody.innerHTML += `
+                    <tr>
+                        <td style="color: var(--text-muted);">#${c.id}</td>
+                        <td style="font-weight: 500;">${c.name}</td>
+                        <td>${c.product_count} items</td>
+                    </tr>
+                    `;
+                });
+            });
+    }
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('cname').value;
+        fetch('/api/categories/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+            body: JSON.stringify({ name: name })
+        }).then(res => {
+            if(res.ok) {
+                form.reset();
+                loadCategories();
+            } else {
+                alert("Failed to create category");
+            }
+        });
+    });
+
+    loadCategories();
+});
+</script>
+{% endblock %}

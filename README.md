@@ -1,6 +1,6 @@
 # Modern Inventory Management System
 
-A robust, full-featured Inventory Management System built with Flask, SQLAlchemy, and Bootstrap 5.
+A robust, full-featured Inventory Management System built with Django, Django Rest Framework, and HTML ,CSS as well as JavaScript.
 
 ## Features
 
